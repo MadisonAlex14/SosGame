@@ -1,257 +1,208 @@
 using System;
-using System.Diagnostics.Eventing.Reader;
 using System.Drawing;
 using System.Windows.Forms;
+using System.Xml.Serialization;
 namespace SOSGameApp
 {
     public partial class Form1 : Form
     {
+        private SOSGame game;
         private Button[,] boardButtons;
-        private int boardSize = 3;
-        private bool isBlueTurn = true;
-
+        private bool isBlueTurn = true; // blue always goes first 
+        private bool isSimpleGame = true;
+        private bool gameModeLocked = false; // i have to lock it cause s**t wasnt staying\
+        
         public Form1()
         {
             InitializeComponent();
-            panel1.BorderStyle = BorderStyle.FixedSingle;
-            panel1.BackColor = Color.White;
+
+            radioButton1.Checked = true;
+            radioButton3.Checked = true;
+            radioButton5.Checked = true;
             button1.Click += Button1_Click;
+            buttonNewGame.Click += ButtonNewGame_Click;
+
+            radioButton3.CheckedChanged += PlayerLetterChanged;
+            radioButton4.CheckedChanged += PlayerLetterChanged;
+            radioButton5.CheckedChanged += PlayerLetterChanged;
+            radioButton6.CheckedChanged += PlayerLetterChanged;
+
+            UpdateCurrentPlayerLabel();
         }
 
+        // creates the board when button is clicked
         private void Button1_Click(object sender, EventArgs e)
         {
-            if (!int.TryParse(textBox1.Text, out boardSize) || boardSize < 3)
+            if (!int.TryParse(textBox1.Text, out int size) || size < 3)
             {
-                MessageBox.Show("Please enter a valid board size (3-10)");
+                MessageBox.Show("Enter in valid board size (>3!)");
                 return;
             }
-            CreateBoard(boardSize);
+
+            game = new SOSGame(size);
+            InitializeBoard(size);
+
+            //lock game after board is created
+            gameModeLocked = true;
+            radioButton1.Enabled = false;
+            radioButton2.Enabled = false;
         }
-
-
-
-        private void CreateBoard(int size)
+        private void InitializeBoard(int size)
         {
             panel1.Controls.Clear();
             boardButtons = new Button[size, size];
-
-
-            int buttonWidth = panel1.Width / boardSize;
-            int buttonHeight = panel1.Height / boardSize;
-            int buttonSize = Math.Min(panel1.Width, panel1.Height) / size;
-
-
+            int buttonSize = Math.Min(panel1.Width / size, panel1.Height / size);
+            int boardWidth = buttonSize * size;
+            int boardHeight = buttonSize * size;
+            int xOffset = (panel1.Width - boardWidth) / 2;
+            int yOffset = (panel1.Height - boardHeight) / 2;
 
             for (int i = 0; i < size; i++)
             {
                 for (int j = 0; j < size; j++)
                 {
-                    Button btn = new Button();
-                    btn.Width = btn.Height = buttonSize - 2;
-                    btn.Location = new Point(j * buttonSize, i * buttonSize);
-                    btn.Font = new Font("Arial", buttonSize / 2, FontStyle.Bold);
-                    btn.Tag = new Point(i, j);
-                    btn.TextAlign = ContentAlignment.MiddleCenter;
-
-                    btn.Click += BoardButton_Click;
-
+                    Button btn = new Button
+                    {
+                        Size = new Size(buttonSize, buttonSize),
+                        Location = new Point(xOffset + j * buttonSize, yOffset + i * buttonSize),
+                        Font = new Font("Arial", 16, FontStyle.Bold),
+                        Tag = new Point(i, j)
+                    };
+                    btn.Click += boardButtons_Click;
                     panel1.Controls.Add(btn);
                     boardButtons[i, j] = btn;
                 }
             }
-
+            // resets scores and turns 
+            labelBlueScore.Text = "Blue: 0";
+            labelRedScore.Text = "Red: 0";
             isBlueTurn = true;
-            label5.Text = "Current Players Turn: Blue";
+            UpdateCurrentPlayerLabel();
         }
 
-
-
-
-
-
-        private void BoardButton_Click(object sender, EventArgs e)
+        private void boardButton_Click(object sender, EventArgs e)
         {
-            // makes sure no one clicks on the same box twice
-            Button btn = sender as Button;
-            if (btn.Text != "") return;
+            if (game == null) return;
 
+            Button clicked = sender as Button;
+            Point pos = (Point)clicked.Tag;
+            int row = pos.X;
+            int col = pos.Y;
 
-            if (!IsCorrectPlayerMove())
+            if (!string.IsNullOrEmpty(clicked.Text)) return;
+
+            string letter = GetSelectedLetter();
+            clicked.Text = letter;
+            clicked.ForeColor = isBlueTurn ? Color.Blue : Color.Red;
+
+            //update game board
+            game.PlaceLetter(row, col, letter);
+
+            //check for SOS
+            int sos = game.CheckForSOS(row, col, isBlueTurn ? Player.Blue : Player.Red);
+            labelBlueScore.Text = $"Blue: {game.BlueScore}";
+            labelRedScore.Text = $"Red: {game.RedScore}";
+
+            //SIMPLE GAME
+            if (isSimpleGame)
             {
-                MessageBox.Show("Not your turn or please select S or O!");
-                return;
-            }
-
- 
-            string letter = GetCurrentPlayerLetter();
-            btn.Text = letter;
-            btn.ForeColor = isBlueTurn ? Color.Blue : Color.Red;
-
-            Point pos = (Point)btn.Tag;
-            
-            bool winner = false;
-            string currentPlayer = isBlueTurn ? "Blue" : "Red";
-            
-
-            if (radioButton1.Checked)
-            {
-                if (CheckSOS())
-                    winner = true;
-            }
-            else if (radioButton2.Checked)
-            {
-                if (IsBoardFull())
+                if (sos > 0)
                 {
-                    winner = true;
+                    MessageBox.Show($"{(isBlueTurn ? "Blue" : "Red")} scored an SOS {(isBlueTurn ? "Blue" : "Red")} wins!");
+                    ResetGameAfterSimpleEnd();
+                    return;
+                }
+                if (game.IsBoardFull())
+                {
+                    MessageBox.Show("Draw, play again!");
+                    ResetGameAfterSimpleEnd();
+                    return;
                 }
             }
-
-            if (winner)
+            // GENERAL GAME
+            if (!isSimpleGame && game.IsBoardFull())
             {
-                MessageBox.Show($"{currentPlayer} wins!");
-                CreateBoard(boardButtons.GetLength(0)); //resets board
+                var winner = game.GetWinner();
+                string msg = winner == null ? "It's a tie!" : $"{winner} wins!";
+                MessageBox.Show(msg);
+                ResetGameAfterGeneralEnd();
                 return;
             }
-
-                isBlueTurn = !isBlueTurn;
-                label5.Text = "Current Player: " + (isBlueTurn ? "Blue" : "Red");
-
+            //switch turns
+            isBlueTurn = !isBlueTurn;
+            UpdateCurrentPlayerLabel();
         }
-        private string GetCurrentPlayerLetter()
+        private string GetSelectedLetter()
         {
             if (isBlueTurn)
                 return radioButton3.Checked ? "S" : "O";
-        else
+            else 
                 return radioButton5.Checked ? "S" : "O";
-         }
-
-
-        private bool CheckSOS()
-        {
-            int size = boardButtons.GetLength(0);
-            string[,] board = new string[size,size];
-            for (int i = 0; i < size; i++)
-            {
-                for (int j = 0; j < size; j++)
-                {
-                    board[i, j] = boardButtons[i, j].Text;
-                }
-                    
-            }
-
-            for (int i = 0;i < size; i++)
-            {
-                for (int j = 0;j < size; j++)
-                {
-                     if (j + 2 < size && board[i, j] == "S" && board[i, j  + 1] == "O" && board[i, j + 2] == "S")
-                         return true;
-                     if (i + 2 < size && board[i, j] == "S" && board[i + 1, j] == "O" && board[i + 2, j] == "S")
-                           return true;
-                     if (i + 2 < size && j + 2 < size && board[i, j] == "S" && board[i + 1, j + 1] == "O" && board[i + 2, j + 2] == "S")
-                         return true;
-                    if (i + 2 < size && j - 2 >= 0 && board[i, j] == "S" && board[i + 1, j - 1] == "O" && board[i + 2, j - 2] == "S")
-                        return true;
-                }
-            }
-            
-            return false;
         }
-
-        private bool IsBoardFull()
+        private void UpdateCurrentPlayerLabel()
         {
-            int size = boardButtons.GetLength(0);
-            for (int i = 0; i < size; i++)
-            {
-                for (int j = 0; j < size; j++)
-                {
-                    if (boardButtons[i, j].Text == "")
-                        return false;
-                }
-            }
-            return true;
+            label5.Text = $"Current Player: {(isBlueTurn ? "Blue" : "Red")}";
+            label5.ForeColor = isBlueTurn ? Color.Blue : Color.Red;
         }
-
-        private bool IsCorrectPlayerMove()
-        {
-            if (isBlueTurn)
-            {
-                return radioButton3.Checked || radioButton4.Checked;
-
-            }
-            else
-            {
-                return radioButton5.Checked || radioButton6.Checked;
-            }
-        }
-
-        private void label4_Click(object sender, EventArgs e)
+        private void PlayerLetterChanged(object sender, EventArgs e)
         {
 
         }
-        // panel resize that isnt f*******ing working.... 
-        private void Panel1_Resize(object sender, EventArgs e)
+        private void radioButton1_CheckedCHanged(object sender, EventArgs e)
+        {
+            if (!gameModeLocked && radioButton1.Checked)
+                isSimpleGame = true;
+        }
+        private void radioButton2_CheckedChanged(object sender, EventArgs e)
+        {
+            if (!gameModeLocked && radioButton2.Checked)
+                isSimpleGame = false;
+        }
+        private void ButtonNewGame_Click(object sender, EventArgs e)
+        {
+            if (game != null)
+                game.Reset();
+            if (game != null)
+                InitializeBoard(game.Size);
+            gameModeLocked = false;
+            radioButton1.Enabled = true;
+            radioButton2.Enabled = true;
+        }
+        private void boardButtons_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void DisableBoard()
         {
             if (boardButtons == null) return;
-            int boardSize = boardButtons.GetLength(0);
-            int buttonWidth = panel1.Width / boardSize;
-            int buttonHeight = panel1.Height / boardSize;
-            int buttonSize = Math.Min(buttonWidth, buttonHeight);
-
-            for (int i = 0;i < boardSize; i++)
+            foreach (Button btn in boardButtons)
+                btn.Enabled = false;
+        }
+        private void EndGame()
+        {
+            DisableBoard();
+            gameModeLocked = false;
+            radioButton1.Enabled = true;
+            radioButton2.Enabled = true;
+        }
+        private void ResetGameAfterSimpleEnd()
+        {
+            EndGame();
+            if (game != null)
             {
-                for (int j = 0;j < boardSize; j++)
-                {
-                    Button btn = boardButtons[i, j];
-                    btn.Width = btn.Height = buttonSize - 2;
-                    btn.Location = new Point(j * buttonSize, i * buttonSize);
-                    btn.Font = new Font("Arial", buttonSize / 2, FontStyle.Bold);
-                }
+                game.Reset();
+                InitializeBoard(game.Size);
             }
         }
-
-        private bool CheckSOSAt(int row, int col)
+        private void ResetGameAfterGeneralEnd()
         {
-            int size = boardButtons.GetLength(0);
-            string[,] board = new string[size, size];
-
-            for (int i = 0; i < size; i++)
-                for (int j = 0; j < size; j++)
-                    board[i, j] = boardButtons[i, j].Text;
-
-
-            // checks hor
-            if (col - 2 >= 0 && board[row, col - 2] == "S" && board[row, col - 1] == "O" && board[row, col] == "S")
-                return true;
-            if (col - 1 >= 0 && col + 1 < size && board[row, col -1] == "S" && board[row, col] == "O" && board[row ,col + 1] == "S")
-                return true;
-            if (col + 2 < size && board[row, col] == "S" && board[row, col + 1] == "O" && board[row, col + 2]== "S")
-                return true;
-
-            // checks vert
-            if (row - 2 >= 0 && board[row - 2, col] == "S" && board[row - 1, col] == "O" && board[row, col] == "S")
-                return true;
-            if ((row - 1) >= 0 && row + 1 < size && board[row -1, col] == "S" && board[row, col] == "O" && board[row + 1, col] == "S")
-                return true;
-            if (row + 2 < size && board[row, col] == "S" && board[row + 1, col] == "O" && board[row + 2, col] == "S")
-                return true;
-            // diagonal right
-            if (row - 2 >= 0 && col - 2 >= 0 && board[row -2, col -2] == "S" && board[ row -1, col -1] == "O" && board[row, col] == "S")
-                return true;
-            if (row -1 >= 0 && col -1 >= 0 && row + 1 < size && col + 1 < size && board[row -1, col -1] == "S" && board[row, col] == "O" && board[row +1, col + 1] == "S")
-                return true;
-            if (row + 2 < size && col + 2 < size && board[row, col] == "S" && board[row + 1, col +1] == "O" && board[row + 2, col + 2] == "S")
-                return true;
-            //digonal left
-            if (row - 2 >= 0 && col + 2 < size && board[row - 2, col + 2] == "S" && board[row -1, col + 1] == "O" && board[row, col] == "S")
-                return true;
-            if (row - 1 >= 0 && col + 1 < size && row + 1 < size && col - 1 >= 0 && board[row -1, col + 1] == "O" && board[row, col] == "S")
-                return true;
-            if (row + 2 < size && col - 2 >= 0 && board[row, col] == "S" && board[row + 1, col - 1] == "O" && board[row + 2, col - 2] == "S")
-                return true;
-
-            return false;
+            EndGame();
+            if (game != null)
+            {
+                game.Reset();
+                InitializeBoard(game.Size);
+            }
         }
-      
     }
-    
 }
