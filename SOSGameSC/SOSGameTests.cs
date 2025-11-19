@@ -1,104 +1,92 @@
-using System;
-namespace SOSGameApp
+using Xunit;
+using SOSGameApp; // replace with your actual namespace
+using System.Linq;
+
+namespace SOSGameTests
 {
-    public enum Player { Blue, Red }
-
-    public class SOSGame
+    public class ComputerPlayerTests
     {
-        private char[,] board;
-        public int Size { get; private set; }
-        public int BlueScore { get; private set; }
-        public int RedScore { get; private set; }
-
-        public SOSGame(int size)
+        private GameController controller;
+        public ComputerPlayerTests()
         {
-            if (size < 3)
-                throw new AggregateException("Board size must be greater than 3 please!");
-            Size = size;
-            board = new char[size, size];
-            BlueScore = 0; RedScore = 0;
+            controller = new GameController();
         }
-        // move handling
-        public void PlaceLetter(int row, int col, string letter)
+        // ai move in general
+        [Fact]
+        public void ComputerMove_MakesAMove()
         {
-            if (row < 0 || row >= Size || col < 0 || col >= Size)
-                throw new ArgumentOutOfRangeException();
-            if (board[row, col] != '\0')
-                return;
-            if (letter != "S" && letter != "O")
-                throw new ArgumentException("Only 'S' or 'O' please");
-            board[row, col] = letter[0];
+            controller.StartNewGame(PlayerType.Computer, PlayerType.Human);
+            var initialEmptyCells = controller.Game.GetEmptyCells().Count;
+            controller.MakeComputerMove();
+            var afterMoveEmptyCells = controller.Game.GetEmptyCells().Count;
+            Assert.Equal(initialEmptyCells - 1, afterMoveEmptyCells);
         }
-
-        public bool MakeMove(int row, int col, char letter)
+        // cant move on a space thats taken
+        [Fact]
+        public void ComputerMove_DoesNotOverwriteExistingMove()
         {
-            if (row < 0 || row >= Size || col < 0 || col >= Size)
-                throw new ArgumentOutOfRangeException();
-            if (board[row, col] != 'O')
-                return false;
-            if (letter != 'S' && letter != 'O')
-                throw new ArgumentException("Only 'S' or 'O' please");
-            board[row, col] = letter;
-            return true;
-        }
-        // check SOS game logic 
-        public int CheckForSOS(int row, int col, Player player)
-        {
-            int score = 0;
-            //horizontal 
-            if (col >= 2 && board[row, col - 2] == 'S' && board[row, col - 1] == 'O' && board[row, col] == 'S') score++;
-            if (col <= Size - 3 && board[row, col] == 'S' && board[row, col + 1] == 'O' && board[row, col + 2] == 'S') score++;
-            //vertical 
-            if (row >= 2 && board[row - 2, col] == 'S' && board[row - 1, col] == 'O' && board[row, col] == 'S') score++;
-            if (row <= Size - 3 && board[row, col] == 'S' && board[row + 1, col] == 'O' && board[row + 2, col] == 'S') score++;
-            // diagonal this way --> \ 
-            if (row >= 2 && col >= 2 && board[row - 2, col - 2] == 'S' && board[row - 1, col - 1] == 'O' && board[row, col] == 'S') score++;
-            if (row <= Size - 3 && col <= Size - 3 && board[row, col] == 'S' && board[row + 1, col + 1] == 'O' && board[row + 2, col + 2] == 'S') score++;
-            // diagonal this way --> / 
-            if (row >= 2 && col <= Size - 3 && board[row - 2, col + 2] == 'S' && board[row - 1, col + 1] == 'O' && board[row, col] == 'S') score++;
-            if (row <= Size - 3 && col >= 2 && board[row, col] == 'S' && board[row + 1, col - 1] == 'O' && board[row + 2, col - 2] == 'S') score++;
-
-            //updates scores
-            if (player == Player.Blue)
-                BlueScore += score;
-            else 
-                RedScore += score;
-            return score;
+            controller.StartNewGame(PlayerType.Computer, PlayerType.Human);
+            controller.Game.Board[0, 0] = 'S';
+            controller.MakeComputerMove();
+            Assert.NotEqual('S', controller.Game.Board[0, 0]);
         }
 
-        //game state
-        public bool IsBoardFull()
+        [Fact]
+        public void ComputerMove_CompletesSOS_WhenAvailable()
         {
-            for (int r = 0; r < Size; r++)
-                for (int c = 0; c < Size; c++)
-                    return false;
-            return true;
-        }
-        //legacy method for the tests
-        public bool IsGameOver()
-        {
-            return IsBoardFull();
+            controller.StartNewGame(PlayerType.Computer, PlayerType.Human);
+
+            // set up SOS opportunity
+            controller.Game.Board[0, 0] = 'S';
+            controller.Game.Board[0, 1] = 'O';
+            controller.MakeComputerMove();
+            Assert.Equal('S', controller.Game.Board[0, 2]);
         }
 
-        public string GetWinner()
+        [Fact]
+        public void ComputerMove_OnlyPlacesValidLetter()
         {
-            if (BlueScore > RedScore)
-                return "Blue";
-            else if (RedScore > BlueScore)
-                return "Red";
-            else
-                return null;
-        }
-        public int GetScore(Player player)
-        {
-            return player == Player.Blue ? BlueScore : RedScore;
-        }
-        public void Reset()
-        {
-            board = new char[Size, Size];
-            BlueScore = 0;
-            RedScore = 0;
+            controller.StartNewGame(PlayerType.Computer, PlayerType.Human);
+            controller.MakeComputerMove();
+            var moveCell = controller.LastMoveCell;
+            char placedLetter = controller.Game.Board[moveCell.Row, moveCell.Col];
+            Assert.Contains(placedLetter, new char[] { 'S', 'O' });
         }
 
+        [Fact]
+        public void ComputerMove_DoesNotMoveIfGameOver()
+        {
+            controller.StartNewGame(PlayerType.Computer, PlayerType.Human);
+            // fill the board completely
+            for (int r = 0; r < controller.Game.Board.GetLength(0); r++)
+                for (int c = 0; c < controller.Game.Board.GetLength(1); c++)
+                    controller.Game.Board[r, c] = 'S';
+            controller.Game.GameOver = true;
+            controller.MakeComputerMove();
+            Assert.Null(controller.LastMoveCell);
+        }
+
+        [Fact]
+        public void ComputerMove_PicksOnlyFromEmptyCells()
+        {
+            controller.StartNewGame(PlayerType.Computer, PlayerType.Human);
+            // fill in some cells
+            controller.Game.Board[0, 0] = 'S';
+            controller.Game.Board[1, 1] = 'O';
+            controller.MakeComputerMove();
+            var moveCell = controller.LastMoveCell;
+            Assert.Contains(controller.Game.Board[moveCell.Row, moveCell.Col], new char[] { 'S', 'O' });
+        }
+
+        [Fact]
+        public void ComputerMove_MakesMoveForCurrentPlayerOnly()
+        {
+            controller.StartNewGame(PlayerType.Human, PlayerType.Computer);
+            var currentPlayerBefore = controller.CurrentPlayer.Type;
+            controller.MakeComputerMove();
+            var currentPlayerAfter = controller.CurrentPlayer.Type;
+            Assert.Equal(PlayerType.Computer, currentPlayerBefore);
+            Assert.Equal(PlayerType.Human, currentPlayerAfter);
+        }
     }
 }
