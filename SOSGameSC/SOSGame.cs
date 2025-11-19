@@ -1,83 +1,136 @@
-using System;
+using System.Collections.Generic;
+
 namespace SOSGameApp
 {
-    public enum Player { Blue, Red }
     public class SOSGame
     {
-        private char[,] board;
-        public int Size { get; private set; }
+        public int Size { get; }
+        public GameMode Mode { get; }
+        private readonly Cell[,] board;
+
         public int BlueScore { get; private set; }
         public int RedScore { get; private set; }
 
-        public SOSGame(int sizse)
+        public bool GameOver { get; private set; } = false;
+        public int LastMoveSOSCount { get; private set; } = 0;
+        public PlayerColor? Winner { get; private set; } = null;
+
+        public SOSGame(int size, GameMode mode)
         {
-            if (Size < 3)
-                throw new ArgumentException("Please choose correct board size (>3)");
-            Size = Size;
-            board = new char[Size, Size];
-            BlueScore = 0; RedScore = 0;
+            if (size < 3) throw new System.ArgumentException("Board size must be ≥ 3");
+            Size = size;
+            Mode = mode;
+            board = new Cell[size, size];
+
+            for (int r = 0; r < size; r++)
+                for (int c = 0; c < size; c++)
+                    board[r, c] = new Cell();
         }
 
-        public void PlaceLetter(int row, int col, string letter)
-        {
-            if (row < 0 || row >= Size || col < 0 || col >= Size)
-                throw new ArgumentOutOfRangeException();
-            if (board[row, col] != '\0')
-                return;
-            if (letter != "S" && letter != "O")
-                throw new ArgumentException("Only 'S' or 'O' are allowed");
-            board[row, col] = letter[0];
-        }
+        public Cell GetCell(int r, int c) => board[r, c];
 
-        //sos detection logic 
-        public int CheckForSOS(int row, int col, Player player)
+        public bool PlaceMove(int r, int c, char letter, PlayerColor player)
         {
-            int score = 0;
-            // horizontal 
-            if (col >= 2 && board[row, col - 2] == 'S' && board[row, col - 1] == 'O' && board[row, col] == 'S') score++;
-            if (col <= Size - 3 && board[row, col] == 'S' && board[row, col + 1] == 'O' && board[row, col + 2] == 'S') score++;
-            //vertical 
-            if (row >= 2 && board[row - 2, col] == 'S' && board[row - 1, col] == 'O' && board[row, col] == 'S') score++;
-            if (row <= Size - 3 && board[row, col] == 'S' && board[row + 1, col] == 'S' && board[row + 2, col] == 'S') score++;
-            // diagonal this way --> \
-            if (row >= 2 && col >= 2 && board[row - 2, col - 2] == 'S' && board[row - 1, col - 1] == 'O' && board[row, col] == 'S') score++;
-            if (row <= Size - 3 && col <= Size - 3 && board[row, col] == 'S' && board[row + 1, col + 1] == 'O' && board[row + 2, col + 2] == 'S') score++;
-            // diagonal this way --> / 
-            if (row >= 2 && col <= Size - 3 && board[row - 2, col + 2] == 'S' && board[row - 1, col + 1] == 'O' && board[row, col] == 'S') score++;
-            if (row <= Size - 3 && col >= 2 && board[row, col] == 'S' && board[row + 1, col - 1] == 'O' && board[row + 2, col - 2] == 'S') score++;
+            if (GameOver || !IsValid(r, c) || !string.IsNullOrEmpty(board[r, c].Letter))
+                return false;
+            board[r, c].Letter = letter.ToString();
+            board[r, c].Color = player;
+            int sosCount = CountSOS(r, c, letter);
+            LastMoveSOSCount = sosCount;
 
-            //updates player's score
-            if (player == Player.Blue)
-                BlueScore += score;
-            else 
-                RedScore += score;
-            return score;
+            // add score to current player
+            if (player == PlayerColor.Blue) BlueScore += sosCount;
+            else RedScore += sosCount;
+
+            // end game in Simple mode
+            if (Mode == GameMode.Simple && sosCount > 0)
+            {
+                GameOver = true;
+                Winner = player;
+            }
+            // end game in General mode if board is full
+            if (Mode == GameMode.General && IsBoardFull())
+            {
+                GameOver = true;
+                Winner = BlueScore > RedScore ? PlayerColor.Blue :
+                         RedScore > BlueScore ? PlayerColor.Red : null;
+            }
+
+            return true;
         }
 
         public bool IsBoardFull()
         {
             for (int r = 0; r < Size; r++)
                 for (int c = 0; c < Size; c++)
-                    if (board[r, c] == '\0')
-                        return false;
+                    if (string.IsNullOrEmpty(board[r, c].Letter)) return false;
             return true;
         }
 
-        //ties into Form1.cs compability 
-        public string GetWinner()
+        public List<(int row, int col)> GetSOSSequenceForPlayer(PlayerColor color)
         {
-            if (BlueScore > RedScore)
-                return "Blue";
-            else if (RedScore > BlueScore)
-                return "Red";
-            else
-                return null;
-        }
+            var seq = new List<(int row, int col)>();
+            for (int r = 0; r < Size; r++)
+            {
+                for (int c = 0; c < Size; c++)
+                {
+                    if (board[r, c].Letter != "S" || board[r, c].Color != color)
+                        continue;
+                    // hori
+                    if (c + 2 < Size &&
+                        board[r, c + 1].Letter == "O" && board[r, c + 1].Color == color &&
+                        board[r, c + 2].Letter == "S" && board[r, c + 2].Color == color)
+                        seq.AddRange(new[] { (r, c), (r, c + 1), (r, c + 2) });
+                    // vert
+                    if (r + 2 < Size &&
+                        board[r + 1, c].Letter == "O" && board[r + 1, c].Color == color &&
+                        board[r + 2, c].Letter == "S" && board[r + 2, c].Color == color)
+                        seq.AddRange(new[] { (r, c), (r + 1, c), (r + 2, c) });
+                    // diagonal this way --> \
+                    if (r + 2 < Size && c + 2 < Size &&
+                        board[r + 1, c + 1].Letter == "O" && board[r + 1, c + 1].Color == color &&
+                        board[r + 2, c + 2].Letter == "S" && board[r + 2, c + 2].Color == color)
+                        seq.AddRange(new[] { (r, c), (r + 1, c + 1), (r + 2, c + 2) });
+                    // diagonal this way --> /
+                    if (r - 2 >= 0 && c + 2 < Size &&
+                        board[r - 1, c + 1].Letter == "O" && board[r - 1, c + 1].Color == color &&
+                        board[r - 2, c + 2].Letter == "S" && board[r - 2, c + 2].Color == color)
+                        seq.AddRange(new[] { (r, c), (r - 1, c + 1), (r - 2, c + 2) });
+                }
+            }
 
-        public void Reset()
-        {
-            board = new char[Size, Size];
-            BlueScore = 0; RedScore = 0;
+            return seq;
         }
+        // keeping score for general game
+        private int CountSOS(int r, int c, char letter)
+        {
+            int count = 0;
+            if (letter != 'S' && letter != 'O') return 0;
+            PlayerColor color = board[r, c].Color;
+            (int dr, int dc)[] dirs = { (0, 1), (1, 0), (1, 1), (-1, 1) };
+            foreach (var (dr, dc) in dirs)
+            {
+                int r1 = r + dr, c1 = c + dc;
+                int r2 = r + 2 * dr, c2 = c + 2 * dc;
+                if (!IsValid(r2, c2)) continue;
+                var a = board[r, c];
+                var b = board[r1, c1];
+                var c3 = board[r2, c2];
+                if (a.Letter == "S" && b.Letter == "O" && c3.Letter == "S" &&
+                    a.Color == color && b.Color == color && c3.Color == color)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+        private bool IsValid(int r, int c) => r >= 0 && r < Size && c >= 0 && c < Size;
+    }
+
+    public class Cell
+    {
+        public string Letter { get; set; } = "";
+        public PlayerColor Color { get; set; }
     }
 }
