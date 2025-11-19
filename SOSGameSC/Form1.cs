@@ -1,208 +1,241 @@
 using System;
 using System.Drawing;
+using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Xml.Serialization;
+
 namespace SOSGameApp
 {
     public partial class Form1 : Form
     {
-        private SOSGame game;
-        private Button[,] boardButtons;
-        private bool isBlueTurn = true; // blue always goes first 
-        private bool isSimpleGame = true;
-        private bool gameModeLocked = false; // i have to lock it cause s**t wasnt staying\
-        
+        private GameController? controller;
+        private Button[,]? boardButtons;
+
         public Form1()
         {
             InitializeComponent();
 
-            radioButton1.Checked = true;
-            radioButton3.Checked = true;
-            radioButton5.Checked = true;
-            button1.Click += Button1_Click;
+            // since it doesnt want to work I am making simple game mode the defult 
+            radioButton1.Checked = true; // Simple mode
+            radioButtonBlueHuman.Checked = true;
+            radioButtonRedHuman.Checked = true;
+            radioButton3.Checked = true; // Blue S
+            radioButton5.Checked = true; // Red S
+
+            button1.Click += ButtonCreateBoard_Click;
             buttonNewGame.Click += ButtonNewGame_Click;
+            buttonStartComputerGame.Click += ButtonStartComputerGame_Click;
 
-            radioButton3.CheckedChanged += PlayerLetterChanged;
-            radioButton4.CheckedChanged += PlayerLetterChanged;
-            radioButton5.CheckedChanged += PlayerLetterChanged;
-            radioButton6.CheckedChanged += PlayerLetterChanged;
+            radioButtonBlueHuman.CheckedChanged += PlayerTypeChanged;
+            radioButtonBlueComputer.CheckedChanged += PlayerTypeChanged;
+            radioButtonRedHuman.CheckedChanged += PlayerTypeChanged;
+            radioButtonRedComputer.CheckedChanged += PlayerTypeChanged;
 
-            UpdateCurrentPlayerLabel();
+            buttonStartComputerGame.Visible = false;
         }
+        // players switch back and fourth
+        private void PlayerTypeChanged(object? sender, EventArgs e)
+        {
+            if (controller == null) return;
 
-        // creates the board when button is clicked
-        private void Button1_Click(object sender, EventArgs e)
+            controller.Blue.Type = radioButtonBlueComputer.Checked ? PlayerType.Computer : PlayerType.Human;
+            controller.Red.Type = radioButtonRedComputer.Checked ? PlayerType.Computer : PlayerType.Human;
+
+            buttonStartComputerGame.Visible = controller.Blue.Type == PlayerType.Computer && controller.Red.Type == PlayerType.Computer;
+        }
+        // press this button and the board will be created on panel1
+        private void ButtonCreateBoard_Click(object? sender, EventArgs e)
         {
             if (!int.TryParse(textBox1.Text, out int size) || size < 3)
             {
-                MessageBox.Show("Enter in valid board size (>3!)");
+                MessageBox.Show("Enter a valid board size ≥ 3.");
                 return;
             }
 
-            game = new SOSGame(size);
-            InitializeBoard(size);
+            GameMode mode = radioButton2.Checked ? GameMode.General : GameMode.Simple;
+            controller = new GameController(size, mode);
 
-            //lock game after board is created
-            gameModeLocked = true;
-            radioButton1.Enabled = false;
-            radioButton2.Enabled = false;
+            // set player types -- human or computer
+            controller.Blue.Type = radioButtonBlueComputer.Checked ? PlayerType.Computer : PlayerType.Human;
+            controller.Red.Type = radioButtonRedComputer.Checked ? PlayerType.Computer : PlayerType.Human;
+
+            InitializeBoard(size);
+            UpdateScores();
+
+            controller.SetCurrentPlayer(controller.Blue); // Blue starts
+            UpdateCurrentPlayerLabel();
+
+            if (controller.CurrentPlayer.Type == PlayerType.Computer)
+                _ = RunComputerMovesAsync();
         }
+        // make the board itself
         private void InitializeBoard(int size)
         {
             panel1.Controls.Clear();
             boardButtons = new Button[size, size];
-            int buttonSize = Math.Min(panel1.Width / size, panel1.Height / size);
-            int boardWidth = buttonSize * size;
-            int boardHeight = buttonSize * size;
-            int xOffset = (panel1.Width - boardWidth) / 2;
-            int yOffset = (panel1.Height - boardHeight) / 2;
 
-            for (int i = 0; i < size; i++)
+            int btnSize = Math.Min(panel1.Width / size, panel1.Height / size);
+            int xOffset = (panel1.Width - btnSize * size) / 2;
+            int yOffset = (panel1.Height - btnSize * size) / 2;
+
+            for (int r = 0; r < size; r++)
             {
-                for (int j = 0; j < size; j++)
+                for (int c = 0; c < size; c++)
                 {
-                    Button btn = new Button
+                    var btn = new Button
                     {
-                        Size = new Size(buttonSize, buttonSize),
-                        Location = new Point(xOffset + j * buttonSize, yOffset + i * buttonSize),
+                        Size = new Size(btnSize, btnSize),
+                        Location = new Point(xOffset + c * btnSize, yOffset + r * btnSize),
                         Font = new Font("Arial", 16, FontStyle.Bold),
-                        Tag = new Point(i, j)
+                        Tag = new Point(r, c),
+                        BackColor = Color.White,
+                        FlatStyle = FlatStyle.Flat,
+                        Text = ""
                     };
-                    btn.Click += boardButtons_Click;
+                    btn.FlatAppearance.BorderColor = Color.Gray;
+                    btn.Click += BoardButton_Click;
+
                     panel1.Controls.Add(btn);
-                    boardButtons[i, j] = btn;
+                    boardButtons[r, c] = btn;
                 }
             }
-            // resets scores and turns 
-            labelBlueScore.Text = "Blue: 0";
-            labelRedScore.Text = "Red: 0";
-            isBlueTurn = true;
-            UpdateCurrentPlayerLabel();
         }
 
-        private void boardButton_Click(object sender, EventArgs e)
+        private async void BoardButton_Click(object? sender, EventArgs e)
         {
-            if (game == null) return;
+            if (controller == null || boardButtons == null || controller.CurrentPlayer == null || controller.Game.GameOver)
+                return;
 
-            Button clicked = sender as Button;
-            Point pos = (Point)clicked.Tag;
-            int row = pos.X;
-            int col = pos.Y;
+            Button btn = (Button)sender!;
+            if (!string.IsNullOrEmpty(btn.Text)) return;
+            if (controller.CurrentPlayer.Type != PlayerType.Human) return;
 
-            if (!string.IsNullOrEmpty(clicked.Text)) return;
+            Point pos = (Point)btn.Tag;
+            char letter = GetSelectedLetter();
 
-            string letter = GetSelectedLetter();
-            clicked.Text = letter;
-            clicked.ForeColor = isBlueTurn ? Color.Blue : Color.Red;
+            await HandleMove(pos.X, pos.Y, letter);
+        }
 
-            //update game board
-            game.PlaceLetter(row, col, letter);
-
-            //check for SOS
-            int sos = game.CheckForSOS(row, col, isBlueTurn ? Player.Blue : Player.Red);
-            labelBlueScore.Text = $"Blue: {game.BlueScore}";
-            labelRedScore.Text = $"Red: {game.RedScore}";
-
-            //SIMPLE GAME
-            if (isSimpleGame)
+        private char GetSelectedLetter()
+        {
+            return controller!.CurrentPlayer.Color switch
             {
-                if (sos > 0)
-                {
-                    MessageBox.Show($"{(isBlueTurn ? "Blue" : "Red")} scored an SOS {(isBlueTurn ? "Blue" : "Red")} wins!");
-                    ResetGameAfterSimpleEnd();
-                    return;
-                }
-                if (game.IsBoardFull())
-                {
-                    MessageBox.Show("Draw, play again!");
-                    ResetGameAfterSimpleEnd();
-                    return;
-                }
-            }
-            // GENERAL GAME
-            if (!isSimpleGame && game.IsBoardFull())
+                PlayerColor.Blue => radioButton3.Checked ? 'S' : 'O',
+                PlayerColor.Red => radioButton5.Checked ? 'S' : 'O',
+                _ => 'S'
+            };
+        }
+        // makes sure the moves and gameplay is right 
+        private async Task HandleMove(int row, int col, char letter)
+        {
+            if (controller == null || controller.CurrentPlayer == null || controller.Game.GameOver)
+                return;
+
+            PlayerColor playerColor = controller.CurrentPlayer.Color;
+            bool success = controller.MakeMove(row, col, letter);
+
+            if (!success) return;
+
+            UpdateBoardUI(row, col, letter, playerColor);
+            HighlightAllSequences();
+            UpdateScores();
+
+            // end game check number 100
+            if (controller.Game.GameOver)
             {
-                var winner = game.GetWinner();
-                string msg = winner == null ? "It's a tie!" : $"{winner} wins!";
-                MessageBox.Show(msg);
-                ResetGameAfterGeneralEnd();
+                DeclareWinnerAndReset();
                 return;
             }
-            //switch turns
-            isBlueTurn = !isBlueTurn;
+
             UpdateCurrentPlayerLabel();
+
+            // if next player is computer, run AI from GameController
+            if (controller.CurrentPlayer.Type == PlayerType.Computer)
+                await RunComputerMovesAsync();
         }
-        private string GetSelectedLetter()
+
+        private void UpdateBoardUI(int row, int col, char letter, PlayerColor playerColor)
         {
-            if (isBlueTurn)
-                return radioButton3.Checked ? "S" : "O";
-            else 
-                return radioButton5.Checked ? "S" : "O";
+            var btn = boardButtons![row, col];
+            btn.Text = letter.ToString();
+            btn.ForeColor = playerColor == PlayerColor.Blue ? Color.Blue : Color.Red;
+            btn.Click -= BoardButton_Click; // disable further clicks
+        }
+
+        private void HighlightAllSequences()
+        {
+            if (boardButtons == null || controller == null) return;
+
+            foreach (var btn in boardButtons)
+                btn.BackColor = Color.White;
+
+            foreach (var cell in controller.Game.GetSOSSequenceForPlayer(PlayerColor.Blue))
+                boardButtons[cell.row, cell.col].BackColor = Color.LightBlue;
+
+            foreach (var cell in controller.Game.GetSOSSequenceForPlayer(PlayerColor.Red))
+                boardButtons[cell.row, cell.col].BackColor = Color.LightCoral;
+        }
+        private void UpdateScores()
+        {
+            if (controller == null) return;
+            labelBlueScore.Text = $"Blue: {controller.Game.BlueScore}";
+            labelRedScore.Text = $"Red: {controller.Game.RedScore}";
         }
         private void UpdateCurrentPlayerLabel()
         {
-            label5.Text = $"Current Player: {(isBlueTurn ? "Blue" : "Red")}";
-            label5.ForeColor = isBlueTurn ? Color.Blue : Color.Red;
+            if (controller == null || controller.CurrentPlayer == null) return;
+            label5.Text = $"Current Player: {controller.CurrentPlayer.Color}";
+            label5.ForeColor = controller.CurrentPlayer.Color == PlayerColor.Blue ? Color.Blue : Color.Red;
         }
-        private void PlayerLetterChanged(object sender, EventArgs e)
+        private async Task RunComputerMovesAsync()
         {
+            if (controller == null || controller.CurrentPlayer == null || controller.Game.GameOver)
+                return;
 
-        }
-        private void radioButton1_CheckedCHanged(object sender, EventArgs e)
-        {
-            if (!gameModeLocked && radioButton1.Checked)
-                isSimpleGame = true;
-        }
-        private void radioButton2_CheckedChanged(object sender, EventArgs e)
-        {
-            if (!gameModeLocked && radioButton2.Checked)
-                isSimpleGame = false;
-        }
-        private void ButtonNewGame_Click(object sender, EventArgs e)
-        {
-            if (game != null)
-                game.Reset();
-            if (game != null)
-                InitializeBoard(game.Size);
-            gameModeLocked = false;
-            radioButton1.Enabled = true;
-            radioButton2.Enabled = true;
-        }
-        private void boardButtons_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void DisableBoard()
-        {
-            if (boardButtons == null) return;
-            foreach (Button btn in boardButtons)
-                btn.Enabled = false;
-        }
-        private void EndGame()
-        {
-            DisableBoard();
-            gameModeLocked = false;
-            radioButton1.Enabled = true;
-            radioButton2.Enabled = true;
-        }
-        private void ResetGameAfterSimpleEnd()
-        {
-            EndGame();
-            if (game != null)
+            while (controller.CurrentPlayer.Type == PlayerType.Computer && !controller.Game.GameOver)
             {
-                game.Reset();
-                InitializeBoard(game.Size);
+                var move = controller.GetSmartComputerMove();
+                if (move == null) break;
+
+                await HandleMove(move.Value.row, move.Value.col, move.Value.letter);
+                await Task.Delay(200);
+
+                if (controller.Game.GameOver) break;
             }
         }
-        private void ResetGameAfterGeneralEnd()
+        private void DeclareWinnerAndReset()
         {
-            EndGame();
-            if (game != null)
+            if (controller == null) return;
+
+            string message = controller.Game.Mode == GameMode.Simple
+                ? controller.Game.Winner switch
+                {
+                    PlayerColor.Blue => "Blue wins (Simple Mode)!",
+                    PlayerColor.Red => "Red wins (Simple Mode)!",
+                    _ => "It's a tie!"
+                }
+                : controller.Game.BlueScore > controller.Game.RedScore ? "Blue wins!" :
+                  controller.Game.RedScore > controller.Game.BlueScore ? "Red wins!" : "It's a tie!";
+
+            MessageBox.Show(message, "Game Over", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            // reset game board
+            controller = null;
+            panel1.Controls.Clear();
+            labelBlueScore.Text = "Blue: 0";
+            labelRedScore.Text = "Red: 0";
+            label5.Text = "Current Player: None";
+            buttonStartComputerGame.Visible = false;
+        }
+        private void ButtonNewGame_Click(object? sender, EventArgs e) => DeclareWinnerAndReset();
+        private async void ButtonStartComputerGame_Click(object? sender, EventArgs e)
+        {
+            if (controller == null) return;
+            if (controller.Blue.Type != PlayerType.Computer || controller.Red.Type != PlayerType.Computer)
             {
-                game.Reset();
-                InitializeBoard(game.Size);
+                MessageBox.Show("Both players must be computers.");
+                return;
             }
+            buttonStartComputerGame.Visible = false;
+            await RunComputerMovesAsync();
         }
     }
 }
