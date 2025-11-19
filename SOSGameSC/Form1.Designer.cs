@@ -3,193 +3,324 @@ namespace SOSGameApp
     partial class Form1
     {
         private System.ComponentModel.IContainer components = null;
+
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))
-            components.Dispose();
+                components.Dispose();
             base.Dispose(disposing);
         }
+
         private void InitializeComponent()
         {
-            this.label1 = new System.Windows.Forms.Label();
-            this.radioButton1 = new System.Windows.Forms.RadioButton();
-            this.radioButton2 = new System.Windows.Forms.RadioButton();
-            this.button1 = new System.Windows.Forms.Button();
-            this.label2 = new System.Windows.Forms.Label();
-            this.textBox1 = new System.Windows.Forms.TextBox();
-            this.label3 = new System.Windows.Forms.Label();
-            this.radioButton3 = new System.Windows.Forms.RadioButton();
-            this.radioButton4 = new System.Windows.Forms.RadioButton();
-            this.label4 = new System.Windows.Forms.Label();
-            this.radioButton5 = new System.Windows.Forms.RadioButton();
-            this.radioButton6 = new System.Windows.Forms.RadioButton();
-            this.panel1 = new System.Windows.Forms.Panel();
-            this.label5 = new System.Windows.Forms.Label();
-            this.SuspendLayout();
+            label1 = new Label();
+            radioButton1 = new RadioButton();
+            radioButton2 = new RadioButton();
+            button1 = new Button();
+            label2 = new Label();
+            textBox1 = new TextBox();
+            label3 = new Label();
+            groupBoxBluePlayerType = new GroupBox();
+            radioButtonBlueHuman = new RadioButton();
+            radioButtonBlueComputer = new RadioButton();
+            groupBoxBlueLetter = new GroupBox();
+            radioButton3 = new RadioButton();
+            radioButton4 = new RadioButton();
+            label4 = new Label();
+            groupBoxRedPlayerType = new GroupBox();
+            radioButtonRedHuman = new RadioButton();
+            radioButtonRedComputer = new RadioButton();
+            groupBoxRedLetter = new GroupBox();
+            radioButton5 = new RadioButton();
+            radioButton6 = new RadioButton();
+            panel1 = new Panel();
+            labelBlueScore = new Label();
+            labelRedScore = new Label();
+            label5 = new Label();
+            buttonNewGame = new Button();
+            buttonStartComputerGame = new Button();
+            groupBoxBluePlayerType.SuspendLayout();
+            groupBoxBlueLetter.SuspendLayout();
+            groupBoxRedPlayerType.SuspendLayout();
+            groupBoxRedLetter.SuspendLayout();
+            SuspendLayout();
             // 
             // label1
             // 
-            this.label1.AutoSize = true;
-            this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label1.Location = new System.Drawing.Point(26, 29);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(64, 24);
-            this.label1.TabIndex = 0;
-            this.label1.Text = "SOS: ";
+            label1.AutoSize = true;
+            label1.Font = new Font("Microsoft Sans Serif", 14F, FontStyle.Bold);
+            label1.Location = new Point(26, 29);
+            label1.Name = "label1";
+            label1.Size = new Size(81, 29);
+            label1.TabIndex = 0;
+            label1.Text = "SOS: ";
             // 
             // radioButton1
             // 
-            this.radioButton1.AutoSize = true;
-            this.radioButton1.Location = new System.Drawing.Point(96, 36);
-            this.radioButton1.Name = "radioButton1";
-            this.radioButton1.Size = new System.Drawing.Size(56, 17);
-            this.radioButton1.TabIndex = 1;
-            this.radioButton1.TabStop = true;
-            this.radioButton1.Text = "Simple";
-            this.radioButton1.UseVisualStyleBackColor = true;
+            radioButton1.AutoSize = true;
+            radioButton1.Location = new Point(122, 38);
+            radioButton1.Name = "radioButton1";
+            radioButton1.Size = new Size(76, 24);
+            radioButton1.TabIndex = 1;
+            radioButton1.Text = "Simple";
             // 
             // radioButton2
             // 
-            this.radioButton2.AutoSize = true;
-            this.radioButton2.Location = new System.Drawing.Point(158, 36);
-            this.radioButton2.Name = "radioButton2";
-            this.radioButton2.Size = new System.Drawing.Size(62, 17);
-            this.radioButton2.TabIndex = 2;
-            this.radioButton2.TabStop = true;
-            this.radioButton2.Text = "General";
-            this.radioButton2.UseVisualStyleBackColor = true;
+            radioButton2.AutoSize = true;
+            radioButton2.Location = new Point(220, 38);
+            radioButton2.Name = "radioButton2";
+            radioButton2.Size = new Size(81, 24);
+            radioButton2.TabIndex = 2;
+            radioButton2.Text = "General";
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(818, 29);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(96, 34);
-            this.button1.TabIndex = 3;
-            this.button1.Text = "Create Board";
-            this.button1.UseVisualStyleBackColor = true;
+            button1.Location = new Point(791, 33);
+            button1.Name = "button1";
+            button1.Size = new Size(140, 34);
+            button1.TabIndex = 3;
+            button1.Text = "Create Board";
             // 
             // label2
             // 
-            this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(681, 40);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(61, 13);
-            this.label2.TabIndex = 4;
-            this.label2.Text = "Board Size:";
+            label2.AutoSize = true;
+            label2.Location = new Point(554, 40);
+            label2.Name = "label2";
+            label2.Size = new Size(83, 20);
+            label2.TabIndex = 4;
+            label2.Text = "Board Size:";
             // 
             // textBox1
             // 
-            this.textBox1.Location = new System.Drawing.Point(748, 37);
-            this.textBox1.Name = "textBox1";
-            this.textBox1.Size = new System.Drawing.Size(50, 20);
-            this.textBox1.TabIndex = 5;
+            textBox1.Location = new Point(643, 37);
+            textBox1.Name = "textBox1";
+            textBox1.Size = new Size(89, 27);
+            textBox1.TabIndex = 5;
             // 
             // label3
             // 
-            this.label3.AutoSize = true;
-            this.label3.Font = new System.Drawing.Font("Rockwell", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label3.ForeColor = System.Drawing.SystemColors.ActiveCaption;
-            this.label3.Location = new System.Drawing.Point(73, 247);
-            this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(101, 19);
-            this.label3.TabIndex = 6;
-            this.label3.Text = "Blue Player";
+            label3.AutoSize = true;
+            label3.Font = new Font("Rockwell", 12F, FontStyle.Bold);
+            label3.ForeColor = SystemColors.ActiveCaption;
+            label3.Location = new Point(48, 188);
+            label3.Name = "label3";
+            label3.Size = new Size(124, 24);
+            label3.TabIndex = 6;
+            label3.Text = "Blue Player";
+            // 
+            // groupBoxBluePlayerType
+            // 
+            groupBoxBluePlayerType.Controls.Add(radioButtonBlueHuman);
+            groupBoxBluePlayerType.Controls.Add(radioButtonBlueComputer);
+            groupBoxBluePlayerType.Location = new Point(52, 230);
+            groupBoxBluePlayerType.Name = "groupBoxBluePlayerType";
+            groupBoxBluePlayerType.Size = new Size(120, 70);
+            groupBoxBluePlayerType.TabIndex = 7;
+            groupBoxBluePlayerType.TabStop = false;
+            groupBoxBluePlayerType.Text = "Player Type";
+            // 
+            // radioButtonBlueHuman
+            // 
+            radioButtonBlueHuman.AutoSize = true;
+            radioButtonBlueHuman.Location = new Point(10, 20);
+            radioButtonBlueHuman.Name = "radioButtonBlueHuman";
+            radioButtonBlueHuman.Size = new Size(78, 24);
+            radioButtonBlueHuman.TabIndex = 0;
+            radioButtonBlueHuman.Text = "Human";
+            // 
+            // radioButtonBlueComputer
+            // 
+            radioButtonBlueComputer.AutoSize = true;
+            radioButtonBlueComputer.Location = new Point(10, 40);
+            radioButtonBlueComputer.Name = "radioButtonBlueComputer";
+            radioButtonBlueComputer.Size = new Size(96, 24);
+            radioButtonBlueComputer.TabIndex = 1;
+            radioButtonBlueComputer.Text = "Computer";
+            // 
+            // groupBoxBlueLetter
+            // 
+            groupBoxBlueLetter.Controls.Add(radioButton3);
+            groupBoxBlueLetter.Controls.Add(radioButton4);
+            groupBoxBlueLetter.Location = new Point(48, 333);
+            groupBoxBlueLetter.Name = "groupBoxBlueLetter";
+            groupBoxBlueLetter.Size = new Size(120, 70);
+            groupBoxBlueLetter.TabIndex = 8;
+            groupBoxBlueLetter.TabStop = false;
+            groupBoxBlueLetter.Text = "Human Letter Move";
             // 
             // radioButton3
             // 
-            this.radioButton3.AutoSize = true;
-            this.radioButton3.Location = new System.Drawing.Point(96, 276);
-            this.radioButton3.Name = "radioButton3";
-            this.radioButton3.Size = new System.Drawing.Size(32, 17);
-            this.radioButton3.TabIndex = 7;
-            this.radioButton3.TabStop = true;
-            this.radioButton3.Text = "S";
-            this.radioButton3.UseVisualStyleBackColor = true;
+            radioButton3.AutoSize = true;
+            radioButton3.Location = new Point(10, 20);
+            radioButton3.Name = "radioButton3";
+            radioButton3.Size = new Size(38, 24);
+            radioButton3.TabIndex = 0;
+            radioButton3.Text = "S";
             // 
             // radioButton4
             // 
-            this.radioButton4.AutoSize = true;
-            this.radioButton4.Location = new System.Drawing.Point(95, 299);
-            this.radioButton4.Name = "radioButton4";
-            this.radioButton4.Size = new System.Drawing.Size(33, 17);
-            this.radioButton4.TabIndex = 8;
-            this.radioButton4.TabStop = true;
-            this.radioButton4.Text = "O";
-            this.radioButton4.UseVisualStyleBackColor = true;
+            radioButton4.AutoSize = true;
+            radioButton4.Location = new Point(10, 40);
+            radioButton4.Name = "radioButton4";
+            radioButton4.Size = new Size(41, 24);
+            radioButton4.TabIndex = 1;
+            radioButton4.Text = "O";
             // 
             // label4
             // 
-            this.label4.AutoSize = true;
-            this.label4.Font = new System.Drawing.Font("Rockwell", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label4.ForeColor = System.Drawing.Color.IndianRed;
-            this.label4.Location = new System.Drawing.Point(767, 228);
-            this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(96, 19);
-            this.label4.TabIndex = 9;
-            this.label4.Text = "Red Player";
-            this.label4.Click += new System.EventHandler(this.label4_Click);
+            label4.AutoSize = true;
+            label4.Font = new Font("Rockwell", 12F, FontStyle.Bold);
+            label4.ForeColor = Color.IndianRed;
+            label4.Location = new Point(791, 188);
+            label4.Name = "label4";
+            label4.Size = new Size(118, 24);
+            label4.TabIndex = 9;
+            label4.Text = "Red Player";
+            // 
+            // groupBoxRedPlayerType
+            // 
+            groupBoxRedPlayerType.Controls.Add(radioButtonRedHuman);
+            groupBoxRedPlayerType.Controls.Add(radioButtonRedComputer);
+            groupBoxRedPlayerType.Location = new Point(791, 230);
+            groupBoxRedPlayerType.Name = "groupBoxRedPlayerType";
+            groupBoxRedPlayerType.Size = new Size(120, 70);
+            groupBoxRedPlayerType.TabIndex = 10;
+            groupBoxRedPlayerType.TabStop = false;
+            groupBoxRedPlayerType.Text = "Player Type";
+            // 
+            // radioButtonRedHuman
+            // 
+            radioButtonRedHuman.AutoSize = true;
+            radioButtonRedHuman.Location = new Point(10, 20);
+            radioButtonRedHuman.Name = "radioButtonRedHuman";
+            radioButtonRedHuman.Size = new Size(78, 24);
+            radioButtonRedHuman.TabIndex = 0;
+            radioButtonRedHuman.Text = "Human";
+            // 
+            // radioButtonRedComputer
+            // 
+            radioButtonRedComputer.AutoSize = true;
+            radioButtonRedComputer.Location = new Point(10, 40);
+            radioButtonRedComputer.Name = "radioButtonRedComputer";
+            radioButtonRedComputer.Size = new Size(96, 24);
+            radioButtonRedComputer.TabIndex = 1;
+            radioButtonRedComputer.Text = "Computer";
+            // 
+            // groupBoxRedLetter
+            // 
+            groupBoxRedLetter.Controls.Add(radioButton5);
+            groupBoxRedLetter.Controls.Add(radioButton6);
+            groupBoxRedLetter.Location = new Point(791, 333);
+            groupBoxRedLetter.Name = "groupBoxRedLetter";
+            groupBoxRedLetter.Size = new Size(120, 70);
+            groupBoxRedLetter.TabIndex = 11;
+            groupBoxRedLetter.TabStop = false;
+            groupBoxRedLetter.Text = "Human Letter Move";
             // 
             // radioButton5
             // 
-            this.radioButton5.AutoSize = true;
-            this.radioButton5.Location = new System.Drawing.Point(797, 259);
-            this.radioButton5.Name = "radioButton5";
-            this.radioButton5.Size = new System.Drawing.Size(32, 17);
-            this.radioButton5.TabIndex = 10;
-            this.radioButton5.TabStop = true;
-            this.radioButton5.Text = "S";
-            this.radioButton5.UseVisualStyleBackColor = true;
+            radioButton5.AutoSize = true;
+            radioButton5.Location = new Point(10, 20);
+            radioButton5.Name = "radioButton5";
+            radioButton5.Size = new Size(38, 24);
+            radioButton5.TabIndex = 0;
+            radioButton5.Text = "S";
             // 
             // radioButton6
             // 
-            this.radioButton6.AutoSize = true;
-            this.radioButton6.Location = new System.Drawing.Point(796, 282);
-            this.radioButton6.Name = "radioButton6";
-            this.radioButton6.Size = new System.Drawing.Size(33, 17);
-            this.radioButton6.TabIndex = 11;
-            this.radioButton6.TabStop = true;
-            this.radioButton6.Text = "O";
-            this.radioButton6.UseVisualStyleBackColor = true;
+            radioButton6.AutoSize = true;
+            radioButton6.Location = new Point(10, 40);
+            radioButton6.Name = "radioButton6";
+            radioButton6.Size = new Size(41, 24);
+            radioButton6.TabIndex = 1;
+            radioButton6.Text = "O";
             // 
             // panel1
             // 
-            this.panel1.Location = new System.Drawing.Point(226, 145);
-            this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(473, 330);
-            this.panel1.TabIndex = 12;
+            panel1.Location = new Point(220, 150);
+            panel1.Name = "panel1";
+            panel1.Size = new Size(500, 330);
+            panel1.TabIndex = 12;
+            // 
+            // labelBlueScore
+            // 
+            labelBlueScore.AutoSize = true;
+            labelBlueScore.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            labelBlueScore.Location = new Point(67, 414);
+            labelBlueScore.Name = "labelBlueScore";
+            labelBlueScore.Size = new Size(69, 28);
+            labelBlueScore.TabIndex = 13;
+            labelBlueScore.Text = "Blue: 0";
+            // 
+            // labelRedScore
+            // 
+            labelRedScore.AutoSize = true;
+            labelRedScore.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            labelRedScore.Location = new Point(814, 429);
+            labelRedScore.Name = "labelRedScore";
+            labelRedScore.Size = new Size(65, 28);
+            labelRedScore.TabIndex = 14;
+            labelRedScore.Text = "Red: 0";
             // 
             // label5
             // 
-            this.label5.AutoSize = true;
-            this.label5.Font = new System.Drawing.Font("MV Boli", 20.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label5.Location = new System.Drawing.Point(323, 553);
-            this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(296, 34);
-            this.label5.TabIndex = 13;
-            this.label5.Text = "Current Player: Blue";
+            label5.AutoSize = true;
+            label5.Font = new Font("MV Boli", 20F, FontStyle.Bold);
+            label5.Location = new Point(256, 500);
+            label5.Name = "label5";
+            label5.Size = new Size(369, 45);
+            label5.TabIndex = 15;
+            label5.Text = "Current Player: Blue";
+            // 
+            // buttonNewGame
+            // 
+            buttonNewGame.Location = new Point(777, 510);
+            buttonNewGame.Name = "buttonNewGame";
+            buttonNewGame.Size = new Size(132, 61);
+            buttonNewGame.TabIndex = 16;
+            buttonNewGame.Text = "New Game";
+            // 
+            // buttonStartComputerGame
+            // 
+            buttonStartComputerGame.Location = new Point(332, 107);
+            buttonStartComputerGame.Name = "buttonStartComputerGame";
+            buttonStartComputerGame.Size = new Size(281, 37);
+            buttonStartComputerGame.TabIndex = 17;
+            buttonStartComputerGame.Text = "Start Computer Game";
             // 
             // Form1
             // 
-            this.ClientSize = new System.Drawing.Size(941, 677);
-            this.Controls.Add(this.label5);
-            this.Controls.Add(this.panel1);
-            this.Controls.Add(this.radioButton6);
-            this.Controls.Add(this.radioButton5);
-            this.Controls.Add(this.label4);
-            this.Controls.Add(this.radioButton4);
-            this.Controls.Add(this.radioButton3);
-            this.Controls.Add(this.label3);
-            this.Controls.Add(this.textBox1);
-            this.Controls.Add(this.label2);
-            this.Controls.Add(this.button1);
-            this.Controls.Add(this.radioButton2);
-            this.Controls.Add(this.radioButton1);
-            this.Controls.Add(this.label1);
-            this.Name = "Form1";
-            this.Text = "SOS Game";
-            this.ResumeLayout(false);
-            this.PerformLayout();
-
+            ClientSize = new Size(950, 600);
+            Controls.Add(label1);
+            Controls.Add(radioButton1);
+            Controls.Add(radioButton2);
+            Controls.Add(button1);
+            Controls.Add(label2);
+            Controls.Add(textBox1);
+            Controls.Add(label3);
+            Controls.Add(groupBoxBluePlayerType);
+            Controls.Add(groupBoxBlueLetter);
+            Controls.Add(label4);
+            Controls.Add(groupBoxRedPlayerType);
+            Controls.Add(groupBoxRedLetter);
+            Controls.Add(panel1);
+            Controls.Add(labelBlueScore);
+            Controls.Add(labelRedScore);
+            Controls.Add(label5);
+            Controls.Add(buttonNewGame);
+            Controls.Add(buttonStartComputerGame);
+            Name = "Form1";
+            Text = "SOS Game";
+            groupBoxBluePlayerType.ResumeLayout(false);
+            groupBoxBluePlayerType.PerformLayout();
+            groupBoxBlueLetter.ResumeLayout(false);
+            groupBoxBlueLetter.PerformLayout();
+            groupBoxRedPlayerType.ResumeLayout(false);
+            groupBoxRedPlayerType.PerformLayout();
+            groupBoxRedLetter.ResumeLayout(false);
+            groupBoxRedLetter.PerformLayout();
+            ResumeLayout(false);
+            PerformLayout();
         }
 
         private System.Windows.Forms.Label label1;
@@ -199,12 +330,24 @@ namespace SOSGameApp
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.TextBox textBox1;
         private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.GroupBox groupBoxBluePlayerType;
+        private System.Windows.Forms.RadioButton radioButtonBlueHuman;
+        private System.Windows.Forms.RadioButton radioButtonBlueComputer;
+        private System.Windows.Forms.GroupBox groupBoxBlueLetter;
         private System.Windows.Forms.RadioButton radioButton3;
         private System.Windows.Forms.RadioButton radioButton4;
         private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.GroupBox groupBoxRedPlayerType;
+        private System.Windows.Forms.RadioButton radioButtonRedHuman;
+        private System.Windows.Forms.RadioButton radioButtonRedComputer;
+        private System.Windows.Forms.GroupBox groupBoxRedLetter;
         private System.Windows.Forms.RadioButton radioButton5;
         private System.Windows.Forms.RadioButton radioButton6;
         private System.Windows.Forms.Panel panel1;
+        private System.Windows.Forms.Label labelBlueScore;
+        private System.Windows.Forms.Label labelRedScore;
         private System.Windows.Forms.Label label5;
+        private System.Windows.Forms.Button buttonNewGame;
+        private System.Windows.Forms.Button buttonStartComputerGame;
     }
 }
