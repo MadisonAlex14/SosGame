@@ -1,92 +1,82 @@
+using System;
+using System.Collections.Generic;
 using Xunit;
-using SOSGameApp; // replace with your actual namespace
-using System.Linq;
+using SOSGameApp;
 
 namespace SOSGameTests
 {
-    public class ComputerPlayerTests
+    public class SOSGameTests
     {
-        private GameController controller;
-        public ComputerPlayerTests()
-        {
-            controller = new GameController();
-        }
-        // ai move in general
         [Fact]
-        public void ComputerMove_MakesAMove()
+        public void SimpleGame_PlaceMove_Success()
         {
-            controller.StartNewGame(PlayerType.Computer, PlayerType.Human);
-            var initialEmptyCells = controller.Game.GetEmptyCells().Count;
-            controller.MakeComputerMove();
-            var afterMoveEmptyCells = controller.Game.GetEmptyCells().Count;
-            Assert.Equal(initialEmptyCells - 1, afterMoveEmptyCells);
-        }
-        // cant move on a space thats taken
-        [Fact]
-        public void ComputerMove_DoesNotOverwriteExistingMove()
-        {
-            controller.StartNewGame(PlayerType.Computer, PlayerType.Human);
-            controller.Game.Board[0, 0] = 'S';
-            controller.MakeComputerMove();
-            Assert.NotEqual('S', controller.Game.Board[0, 0]);
+            SOSGame game = new SOSGame(3, GameMode.Simple);
+
+            bool result = game.PlaceMove(0, 0, 'S', PlayerColor.Blue);
+
+            Assert.True(result);
+            Assert.Equal('S', game.GetCell(0, 0).Letter);
+            Assert.Equal(PlayerColor.Blue, game.GetCell(0, 0).Color);
         }
 
         [Fact]
-        public void ComputerMove_CompletesSOS_WhenAvailable()
+        public void SimpleGame_PlaceMove_FailsOnOccupiedCell()
         {
-            controller.StartNewGame(PlayerType.Computer, PlayerType.Human);
+            SOSGame game = new SOSGame(3, GameMode.Simple);
+            game.PlaceMove(0, 0, 'S', PlayerColor.Blue);
 
-            // set up SOS opportunity
-            controller.Game.Board[0, 0] = 'S';
-            controller.Game.Board[0, 1] = 'O';
-            controller.MakeComputerMove();
-            Assert.Equal('S', controller.Game.Board[0, 2]);
+            bool result = game.PlaceMove(0, 0, 'O', PlayerColor.Red);
+
+            Assert.False(result);
+            Assert.Equal('S', game.GetCell(0, 0).Letter);
+            Assert.Equal(PlayerColor.Blue, game.GetCell(0, 0).Color);
         }
 
         [Fact]
-        public void ComputerMove_OnlyPlacesValidLetter()
+        public void GeneralGame_CountSOS_Correct()
         {
-            controller.StartNewGame(PlayerType.Computer, PlayerType.Human);
-            controller.MakeComputerMove();
-            var moveCell = controller.LastMoveCell;
-            char placedLetter = controller.Game.Board[moveCell.Row, moveCell.Col];
-            Assert.Contains(placedLetter, new char[] { 'S', 'O' });
+            SOSGame game = new SOSGame(3, GameMode.General);
+
+            // place moves to form S-O-S vertically
+            game.PlaceMove(0, 0, 'S', PlayerColor.Blue);
+            game.PlaceMove(1, 0, 'O', PlayerColor.Blue);
+            bool moveResult = game.PlaceMove(2, 0, 'S', PlayerColor.Blue);
+
+            int count = game.CountSOS(2, 0, 'S', PlayerColor.Blue);
+
+            Assert.True(moveResult);
+            Assert.Equal(1, count);
+            Assert.Equal(1, game.BlueScore);
         }
 
         [Fact]
-        public void ComputerMove_DoesNotMoveIfGameOver()
+        public void Game_GameOver_WhenBoardFull()
         {
-            controller.StartNewGame(PlayerType.Computer, PlayerType.Human);
-            // fill the board completely
-            for (int r = 0; r < controller.Game.Board.GetLength(0); r++)
-                for (int c = 0; c < controller.Game.Board.GetLength(1); c++)
-                    controller.Game.Board[r, c] = 'S';
-            controller.Game.GameOver = true;
-            controller.MakeComputerMove();
-            Assert.Null(controller.LastMoveCell);
+            SOSGame game = new SOSGame(2, GameMode.Simple);
+
+            // fill the board
+            game.PlaceMove(0, 0, 'S', PlayerColor.Blue);
+            game.PlaceMove(0, 1, 'O', PlayerColor.Red);
+            game.PlaceMove(1, 0, 'S', PlayerColor.Blue);
+            game.PlaceMove(1, 1, 'O', PlayerColor.Red);
+
+            Assert.True(game.GameOver);
         }
 
         [Fact]
-        public void ComputerMove_PicksOnlyFromEmptyCells()
+        public void SimpleGame_GetSOSSequence_ReturnsCorrectPositions()
         {
-            controller.StartNewGame(PlayerType.Computer, PlayerType.Human);
-            // fill in some cells
-            controller.Game.Board[0, 0] = 'S';
-            controller.Game.Board[1, 1] = 'O';
-            controller.MakeComputerMove();
-            var moveCell = controller.LastMoveCell;
-            Assert.Contains(controller.Game.Board[moveCell.Row, moveCell.Col], new char[] { 'S', 'O' });
-        }
+            SOSGame game = new SOSGame(3, GameMode.Simple);
 
-        [Fact]
-        public void ComputerMove_MakesMoveForCurrentPlayerOnly()
-        {
-            controller.StartNewGame(PlayerType.Human, PlayerType.Computer);
-            var currentPlayerBefore = controller.CurrentPlayer.Type;
-            controller.MakeComputerMove();
-            var currentPlayerAfter = controller.CurrentPlayer.Type;
-            Assert.Equal(PlayerType.Computer, currentPlayerBefore);
-            Assert.Equal(PlayerType.Human, currentPlayerAfter);
+            game.PlaceMove(0, 0, 'S', PlayerColor.Blue);
+            game.PlaceMove(1, 1, 'O', PlayerColor.Blue);
+            game.PlaceMove(2, 2, 'S', PlayerColor.Blue);
+
+            List<(int row, int col, char letter)> sequence = game.GetSOSSequenceForPlayer(PlayerColor.Blue);
+
+            Assert.Contains((0, 0, 'S'), sequence);
+            Assert.Contains((1, 1, 'O'), sequence);
+            Assert.Contains((2, 2, 'S'), sequence);
         }
     }
 }
