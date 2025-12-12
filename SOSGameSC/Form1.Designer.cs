@@ -44,11 +44,7 @@ namespace SOSGameApp
             buttonStartComputerGame = new Button();
             chkRecordGame = new CheckBox();
             btnReplay = new Button();
-
-
-
-
-
+            
             groupBoxBluePlayerType.SuspendLayout();
             groupBoxBlueLetter.SuspendLayout();
             groupBoxRedPlayerType.SuspendLayout();
@@ -265,7 +261,7 @@ namespace SOSGameApp
             Controls.Add(btnLightTheme);
             Controls.Add(btnDarkTheme);
             Controls.Add(btnPinkTheme);
-            // Record Game CheckBox
+            // record
             chkRecordGame = new CheckBox();
             chkRecordGame.AutoSize = true;
             chkRecordGame.Location = new Point(20, 470); // bottom-left
@@ -274,7 +270,7 @@ namespace SOSGameApp
             chkRecordGame.TabIndex = 18;
             chkRecordGame.Text = "Record Game";
             chkRecordGame.UseVisualStyleBackColor = true;
-            // Replay Button
+            // replay
             btnReplay = new Button();
             btnReplay.Location = new Point(135, 465); // next to checkbox
             btnReplay.Name = "btnReplay";
@@ -283,10 +279,10 @@ namespace SOSGameApp
             btnReplay.Text = "Replay";
             btnReplay.UseVisualStyleBackColor = true;
             btnReplay.Visible = false; // hidden until a game is recorded
-
-
-
-
+            //difficulty level buttons
+            btnEasy = new Button { Text = "Easy", Size = new Size(70, 28), Location = new Point(122, 70) };
+            btnMedium = new Button { Text = "Medium", Size = new Size(70, 28), Location = new Point(202, 70) };
+            btnHard = new Button { Text = "Hard", Size = new Size(70, 28), Location = new Point(282, 70) };
             // Form1
             ClientSize = new Size(950, 600);
             Controls.Add(label1);
@@ -321,9 +317,11 @@ namespace SOSGameApp
             PerformLayout();
             Controls.Add(chkRecordGame);
             Controls.Add(btnReplay);
+            Controls.Add(btnEasy);
+            Controls.Add(btnMedium);
+            Controls.Add(btnHard);
 
         }
-
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.RadioButton radioButton1;
         private System.Windows.Forms.RadioButton radioButton2;
@@ -356,5 +354,8 @@ namespace SOSGameApp
         private System.Windows.Forms.Button btnPinkTheme;
         private System.Windows.Forms.CheckBox chkRecordGame;
         private System.Windows.Forms.Button btnReplay;
+        private System.Windows.Forms.Button btnEasy;
+        private System.Windows.Forms.Button btnMedium;
+        private System.Windows.Forms.Button btnHard;
     }
 }
