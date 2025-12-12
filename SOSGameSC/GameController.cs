@@ -14,14 +14,14 @@ namespace SOSGameApp
 
     public class GameController
     {
-        public SOSGame Game { get; private set; }
+        public Game Game { get; private set; }
         public Player Blue { get; private set; }
         public Player Red { get; private set; }
         public Player CurrentPlayer { get; private set; }
 
         private readonly Random rand = new Random();
 
-        // Recording feature
+        // recording 
         public bool IsRecording { get; set; } = false;
         public List<Move> RecordedMoves { get; private set; } = new List<Move>();
 
@@ -31,7 +31,11 @@ namespace SOSGameApp
 
         public GameController(int size, GameMode mode)
         {
-            Game = new SOSGame(size, mode);
+            if (mode == GameMode.Simple)
+                Game = new SimpleGame(size);
+            else
+                Game = new GeneralGame(size);
+
             Blue = new Player(PlayerColor.Blue, PlayerType.Human);
             Red = new Player(PlayerColor.Red, PlayerType.Human);
             CurrentPlayer = Blue;
@@ -56,7 +60,7 @@ namespace SOSGameApp
             bool success = Game.PlaceMove(r, c, letter, CurrentPlayer.Color);
             if (!success) return false;
 
-            // Record this move
+            // record this move
             if (IsRecording)
             {
                 RecordedMoves.Add(new Move
@@ -73,7 +77,6 @@ namespace SOSGameApp
             // switch player if no SOS scored
             if (Game.LastMoveSOSCount == 0) SwitchPlayer();
 
-            // if the game ends....stop recording and trigger event
             if (Game.GameOver)
                 OnGameEnded?.Invoke();
 
@@ -101,13 +104,15 @@ namespace SOSGameApp
         public List<List<Cell>> GetSOSSequencesForPlayer(PlayerColor color) =>
             Game.GetSOSSequencesForPlayer(color);
 
-        // replay recorded moves in order
         public async Task ReplayGame(Action<int, int, char> updateUICallback, int delayMs = 500)
         {
             if (RecordedMoves.Count == 0) return;
 
             int size = Game.Size;
-            Game = new SOSGame(size, Game.Mode); // reset game board
+            if (Game.Mode == GameMode.Simple)
+                Game = new SimpleGame(size);
+            else
+                Game = new GeneralGame(size);
 
             Blue = new Player(PlayerColor.Blue, Blue.Type);
             Red = new Player(PlayerColor.Red, Red.Type);
@@ -122,6 +127,14 @@ namespace SOSGameApp
             }
 
             OnGameEnded?.Invoke(); // show winner after replay
+        }
+
+        public class Move
+        {
+            public int Row { get; set; }
+            public int Col { get; set; }
+            public char Letter { get; set; }
+            public PlayerColor Player { get; set; }
         }
     }
 }
