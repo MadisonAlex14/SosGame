@@ -10,13 +10,17 @@ namespace SOSGameApp
         private GameController controller;
         private Button[,] boardButtons;
         private RecordReplay recordReplay;
+        private DifficultyLevel selectedDifficulty = DifficultyLevel.Easy;
+        private UndoRedo undoRedo;
+        private Button btnUndo;
+        private Button btnRedo;
 
-       
         private bool lastGameEnded = false;
 
         public Form1()
         {
             InitializeComponent();
+            InitializeDifficultyButtons();
 
             // default UI state
             radioButton1.Checked = true; // Simple mode
@@ -43,7 +47,7 @@ namespace SOSGameApp
             buttonNewGame.Click += ButtonNewGame_Click;
             buttonStartComputerGame.Click += ButtonStartComputerGame_Click;
 
-            // replay button behavior
+            // Replay button behavior
             btnReplay.Click += async (s, e) =>
             {
                 btnReplay.Enabled = false;
@@ -51,10 +55,34 @@ namespace SOSGameApp
                 btnReplay.Enabled = true;
             };
 
+            // undo and redo buttons 
+            btnUndo = new Button
+            {
+                Text = "Undo",
+                Size = new Size(75, 30),
+                Location = new Point(20, 500)
+            };
+            btnUndo.Click += BtnUndo_Click;
+            Controls.Add(btnUndo);
+
+            btnRedo = new Button
+            {
+                Text = "Redo",
+                Size = new Size(75, 30),
+                Location = new Point(105, 500)
+            };
+            btnRedo.Click += BtnRedo_Click;
+            Controls.Add(btnRedo);
+
             radioButtonBlueHuman.CheckedChanged += PlayerTypeChanged;
             radioButtonBlueComputer.CheckedChanged += PlayerTypeChanged;
             radioButtonRedHuman.CheckedChanged += PlayerTypeChanged;
             radioButtonRedComputer.CheckedChanged += PlayerTypeChanged;
+
+            // difficulty buttons
+            btnEasy.Click += (s, e) => selectedDifficulty = DifficultyLevel.Easy;
+            btnMedium.Click += (s, e) => selectedDifficulty = DifficultyLevel.Medium;
+            btnHard.Click += (s, e) => selectedDifficulty = DifficultyLevel.Hard;
         }
 
         private void ApplyTheme(Theme theme)
@@ -121,6 +149,8 @@ namespace SOSGameApp
 
             if (controller.CurrentPlayer.Type == PlayerType.Computer)
                 _ = RunComputerMovesAsync();
+
+            undoRedo = new UndoRedo(this, controller);
         }
 
         private void InitializeBoard(int size)
@@ -184,8 +214,6 @@ namespace SOSGameApp
                 return radioButton5.Checked ? 'S' : 'O';
         }
 
-
-        // HANDLE MOVE (includes recording)
         private async Task<bool> HandleMove(int row, int col, char letter)
         {
             if (controller == null || controller.CurrentPlayer == null || controller.Game.GameOver)
@@ -197,6 +225,8 @@ namespace SOSGameApp
             if (!success) return false;
 
             recordReplay.RecordMove(row, col, letter, playerBeforeMove.Color);
+            undoRedo.RecordMove(playerBeforeMove.Color, row, col, letter);
+
 
             UpdateBoardUI(row, col, letter, playerBeforeMove.Color);
             HighlightAllSequences();
@@ -217,7 +247,6 @@ namespace SOSGameApp
                 MessageBox.Show(message, "Game Over", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
                 DisableAllButtons();
-
                 controller.IsRecording = false;
                 lastGameEnded = true;
                 return true;
@@ -257,8 +286,6 @@ namespace SOSGameApp
                     boardButtons[r, c].Enabled = false;
         }
 
-
-        // Highlight SOS sequences
         public void HighlightAllSequences()
         {
             if (boardButtons == null || controller == null) return;
@@ -278,13 +305,18 @@ namespace SOSGameApp
                     boardButtons[cell.Row, cell.Col].BackColor = Color.LightCoral;
         }
 
-
-        private void UpdateScores()
+        public void UpdateScoresUI(int blueScore, int redScore)
         {
-            if (controller == null) return;
+            labelBlueScore.Text = $"Blue: {blueScore}";
+            labelRedScore.Text = $"Red: {redScore}";
+        }
 
-            labelBlueScore.Text = $"Blue: {controller.Game.BlueScore}";
-            labelRedScore.Text = $"Red: {controller.Game.RedScore}";
+        public void UpdateScores()
+        {
+            if (controller != null && controller.Game != null)
+                UpdateScoresUI(controller.Game.BlueScore, controller.Game.RedScore);
+            else
+                UpdateScoresUI(0, 0); // default if no game exists
         }
 
         private void UpdateCurrentPlayerLabel()
@@ -295,14 +327,14 @@ namespace SOSGameApp
             label5.ForeColor = controller.CurrentPlayer.Color == PlayerColor.Blue ? Color.Blue : Color.Red;
         }
 
-
         private async Task RunComputerMovesAsync()
         {
             while (controller != null &&
                    controller.CurrentPlayer.Type == PlayerType.Computer &&
                    !controller.Game.GameOver)
             {
-                var move = await controller.GetComputerMoveAsync();
+                // No cast needed
+                var move = Difficulty.GetMove(controller.Game, controller.CurrentPlayer.Color, selectedDifficulty);
                 if (move == null) break;
 
                 bool success = await HandleMove(move.Value.row, move.Value.col, move.Value.letter);
@@ -311,7 +343,6 @@ namespace SOSGameApp
                 await Task.Delay(250);
             }
         }
-
 
         private void OnGameEnded()
         {
@@ -329,13 +360,10 @@ namespace SOSGameApp
             MessageBox.Show(message, "Game Over", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
             DisableAllButtons();
-
             controller.IsRecording = false;
             lastGameEnded = true;
         }
 
-
-        // resets board for next game or replay
         private void ResetBoard()
         {
             if (boardButtons == null) return;
@@ -352,20 +380,16 @@ namespace SOSGameApp
             UpdateCurrentPlayerLabel();
         }
 
-
-        
         private void ButtonNewGame_Click(object sender, EventArgs e)
         {
-            // shows the replay button if last game ended and there are moves
             btnReplay.Visible = lastGameEnded && recordReplay.MoveCount > 0;
-
-            
             if (!btnReplay.Visible)
             {
                 controller = null;
-                panel1.Controls.Clear(); // only clear when starting a fresh game
+                panel1.Controls.Clear();
                 ResetBoard();
                 recordReplay.ClearMoves();
+                undoRedo?.Clear();
 
                 labelBlueScore.Text = "Blue: 0";
                 labelRedScore.Text = "Red: 0";
@@ -392,7 +416,6 @@ namespace SOSGameApp
             await RunComputerMovesAsync();
         }
 
-        // used by RecordReplay.cs
         public void SetBoardCell(int row, int col, char letter, PlayerColor color)
         {
             if (boardButtons == null) return;
@@ -400,13 +423,10 @@ namespace SOSGameApp
             var btn = boardButtons[row, col];
             btn.Text = letter.ToString();
             btn.ForeColor = color == PlayerColor.Blue ? Color.Blue : Color.Red;
-            btn.Click -= BoardButton_Click; // disable user input during replay
+            btn.Click -= BoardButton_Click;
         }
 
-        public void DisableBoard()
-        {
-            DisableAllButtons();
-        }
+        public void DisableBoard() => DisableAllButtons();
 
         public void EnableBoard()
         {
@@ -418,11 +438,40 @@ namespace SOSGameApp
                         boardButtons[r, c].Enabled = true;
         }
 
-        public void ResetBoardUI()
-        {
-            ResetBoard();
-        }
+        public void ResetBoardUI() => ResetBoard();
 
         private enum Theme { Light, Dark, Pink }
+
+        private void InitializeDifficultyButtons()
+        {
+            btnEasy.Click += (s, e) => SetDifficulty(DifficultyLevel.Easy);
+            btnMedium.Click += (s, e) => SetDifficulty(DifficultyLevel.Medium);
+            btnHard.Click += (s, e) => SetDifficulty(DifficultyLevel.Hard);
+
+            SetDifficulty(selectedDifficulty);
+        }
+        private void SetDifficulty(DifficultyLevel level)
+        {
+            selectedDifficulty = level;
+
+            btnEasy.BackColor = level == DifficultyLevel.Easy ? Color.LightGreen : SystemColors.Control;
+            btnMedium.BackColor = level == DifficultyLevel.Medium ? Color.Yellow : SystemColors.Control;
+            btnHard.BackColor = level == DifficultyLevel.Hard ? Color.Red : SystemColors.Control;
+        }
+        private void BtnUndo_Click(object sender, EventArgs e)
+        {
+            undoRedo?.Undo();
+
+            if (controller.CurrentPlayer.Type == PlayerType.Computer && !controller.Game.GameOver)
+                _ = RunComputerMovesAsync(); // keep async for computer moves
+        }
+
+        private void BtnRedo_Click(object sender, EventArgs e)
+        {
+            undoRedo?.Redo();
+
+            if (controller.CurrentPlayer.Type == PlayerType.Computer && !controller.Game.GameOver)
+                _ = RunComputerMovesAsync();
+        }
     }
 }
